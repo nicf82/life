@@ -93,14 +93,11 @@ void debug_board(uint8_t board[BD_W][BD_H]) {
    }
 }
 
-uint8_t * point_to_board_cellgp_ref(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t *byte) {
-   *byte = (p->x-1) / 4;
-   return &board[*byte][p->y-1];
+inline uint8_t * point_to_board_cellgp_ref(uint8_t board[BD_W][BD_H], struct Point *p) {
+   return &board[(p->x-1) / 4][p->y-1];
 }
 
-void update_cellgp(uint8_t *cellgp, struct Point *p, bool set) {
-   // uint8_t byte = (p->x-1)/4;
-   uint8_t shift = ((p->x-1)%4)*2;
+void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
 
    *cellgp = *cellgp | (1 << shift); //Set dirty flag
    if(set) {
@@ -114,44 +111,53 @@ void update_cellgp(uint8_t *cellgp, struct Point *p, bool set) {
 }
 
 void put_on_board(uint8_t board[BD_W][BD_H], struct Point *shape, uint8_t len, uint8_t ox, uint8_t oy) {
-   uint8_t byte, *cellgp;
+   uint8_t *cellgp, shift;
    struct Point p;
    for(uint8_t i = 0; i < len; i++) {
       p.x = ox+shape[i].x;
       p.y = oy+shape[i].y;
 
-      cellgp = point_to_board_cellgp_ref(board, &p, &byte);
-      update_cellgp(cellgp, &p, true);
+      cellgp = point_to_board_cellgp_ref(board, &p);
+      shift = ((p.x-1)%4)*2;
+      update_cellgp(cellgp, &p, shift, true);
    }
 }
 
-uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p) {
+uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t baseshift) {
 
-   uint8_t c = 0, *cellgp, byte, shift;
+   uint8_t c = 0, *cellgp, shift, start = 0, end = 8;
    struct Point all[] = { {p->x-1, p->y-1}, {p->x, p->y-1}, {p->x+1, p->y-1}, 
                           {p->x-1, p->y},                   {p->x+1, p->y},
                           {p->x-1, p->y+1}, {p->x, p->y+1}, {p->x+1, p->y+1} };
 
-   if(p->x <= X_MIN) {
+   if(p->x == X_MIN) {
       all[0].x = all[3].x = all[5].x = 0;
    }
-   else if (p->x >= X_MAX) {
+   else if (p->x == X_MAX) {
       all[2].x = all[4].x = all[7].x = 0;
    }
 
-   if(p->y <= Y_MIN) {
-      all[0].x = all[1].x = all[2].x = 0;
-   }
-   else if (p->y >= Y_MAX) {
-      all[5].x = all[6].x = all[7].x = 0;
-   }
+   if(p->y == Y_MIN) start = 3;
+   else if (p->y == Y_MAX) end = 4;
+
+   // baseshift = ((p->x-1)%4)*2;
    
-   for(uint8_t i = 0; i < 8; i++) {
+   for(uint8_t i = start; i <= end; i++) {
       if(all[i].x==0) continue;
 
-      cellgp = point_to_board_cellgp_ref(board, &all[i], &byte);
+      cellgp = point_to_board_cellgp_ref(board, &all[i]);
 
-      shift = ((all[i].x-1)%4)*2;
+      if(i==0 || i==3 || i==5) {
+         if(baseshift == 0) shift = 6;
+         else shift = baseshift-2;
+      }
+      else if(i==2 || i==4 || i==7) {
+         if(baseshift == 6) shift = 0;
+         else shift = baseshift+2;
+      }
+      else {
+         shift = baseshift;
+      }
 
       if(IS_ALIVE(*cellgp >> shift))
          c++;
@@ -162,45 +168,47 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p) {
 
 void evolve(uint8_t src_board[BD_W][BD_H], uint8_t dst_board[BD_W][BD_H]) {
    struct Point p = {0,0};
-   uint8_t *cellgp, c, byte;
+   uint8_t *cellgp, c;
 
+   cputcxy(1, 1, '.');
    memcpy(dst_board, src_board, BD_W*BD_H);
+   cputcxy(1, 1, ' ');
 
    for (p.y = Y_MIN; p.y <= Y_MAX; p.y++) {
       for(p.x = X_MIN; p.x <= X_MAX; ) {
 
-         cellgp = point_to_board_cellgp_ref(dst_board, &p, &byte);
+         cellgp = point_to_board_cellgp_ref(dst_board, &p);
 
          //Evolve cell 0
-         c = live_neigbs_cnt(src_board, &p);
+         c = live_neigbs_cnt(src_board, &p, 0);
          if(c == 3 && IS_NOT_ALIVE_0(*cellgp))
-            update_cellgp(cellgp, &p, true);
+            update_cellgp(cellgp, &p, 0, true);
          else if (c != 2 && c != 3 && IS_ALIVE_0(*cellgp))
-            update_cellgp(cellgp, &p, false);
+            update_cellgp(cellgp, &p, 0, false);
          p.x++;
 
          //Evolve cell 1
-         c = live_neigbs_cnt(src_board, &p);
+         c = live_neigbs_cnt(src_board, &p, 2);
          if(c == 3 && IS_NOT_ALIVE_1(*cellgp))
-            update_cellgp(cellgp, &p, true);
+            update_cellgp(cellgp, &p, 2, true);
          else if (c != 2 && c != 3 && IS_ALIVE_1(*cellgp))
-            update_cellgp(cellgp, &p, false);
+            update_cellgp(cellgp, &p, 2, false);
          p.x++;
 
          //Evolve cell 2
-         c = live_neigbs_cnt(src_board, &p);
+         c = live_neigbs_cnt(src_board, &p, 4);
          if(c == 3 && IS_NOT_ALIVE_2(*cellgp))
-            update_cellgp(cellgp, &p, true);
+            update_cellgp(cellgp, &p, 4, true);
          else if (c != 2 && c != 3 && IS_ALIVE_2(*cellgp))
-            update_cellgp(cellgp, &p, false);
+            update_cellgp(cellgp, &p, 4, false);
          p.x++;
 
          //Evolve cell 3
-         c = live_neigbs_cnt(src_board, &p);
+         c = live_neigbs_cnt(src_board, &p, 6);
          if(c == 3 && IS_NOT_ALIVE_3(*cellgp))
-            update_cellgp(cellgp, &p, true);
+            update_cellgp(cellgp, &p, 6, true);
          else if (c != 2 && c != 3 && IS_ALIVE_3(*cellgp))
-            update_cellgp(cellgp, &p, false);
+            update_cellgp(cellgp, &p, 6, false);
          p.x++;
          
       }

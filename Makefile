@@ -36,3 +36,6 @@ include cfg/build_config.mk
 ## USE GLOBAL MAKEFILE (general rules for building CPCtelera projects)
 ##
 include $(CPCT_PATH)/cfg/global_main_makefile.mk
+
+rlocal:
+	/Applications/Retro\ Virtual\ Machine\ 2.app/Contents/MacOS/Retro\ Virtual\ Machine\ 2 -b=cpc6128 -i life.dsk -c='run"life\n'
