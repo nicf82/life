@@ -130,12 +130,13 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t base
                           {p->x-1, p->y},                   {p->x+1, p->y},
                           {p->x-1, p->y+1}, {p->x, p->y+1}, {p->x+1, p->y+1} };
 
-   if(p->x == X_MIN) {
-      all[0].x = all[3].x = all[5].x = 0;
-   }
-   else if (p->x == X_MAX) {
-      all[2].x = all[4].x = all[7].x = 0;
-   }
+   //Taking this out breaks it
+   // if(p->x == X_MIN) {
+   //    all[0].x = all[3].x = all[5].x = 0;
+   // }
+   // else if (p->x == X_MAX) {
+   //    all[2].x = all[4].x = all[7].x = 0;
+   // }
 
    if(p->y == Y_MIN) start = 3;
    else if (p->y == Y_MAX) end = 4;
@@ -143,21 +144,28 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t base
    // baseshift = ((p->x-1)%4)*2;
    
    for(uint8_t i = start; i <= end; i++) {
-      if(all[i].x==0) continue;
+      if(all[i].x==0) {
+         printf("X was 0 for i:%d, p(%d,%d)\r\n", i, p->x, p->y);
+         while(true);
+      }
 
-      cellgp = point_to_board_cellgp_ref(board, &all[i]);
+
 
       if(i==0 || i==3 || i==5) {
+         if(p->x == X_MIN) continue;
          if(baseshift == 0) shift = 6;
          else shift = baseshift-2;
       }
       else if(i==2 || i==4 || i==7) {
+         if(p->x == X_MAX) continue;
          if(baseshift == 6) shift = 0;
          else shift = baseshift+2;
       }
       else {
          shift = baseshift;
       }
+
+      cellgp = point_to_board_cellgp_ref(board, &all[i]);
 
       if(IS_ALIVE(*cellgp >> shift))
          c++;
