@@ -1,0 +1,50 @@
+//-----------------------------LICENSE NOTICE------------------------------------
+//  This file is part of CPCtelera: An Amstrad CPC Game Engine
+//  Copyright (C) 2015 ronaldo / Fremos / Cheesetea / ByteRealms (@FranGallegoBR)
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//------------------------------------------------------------------------------
+
+// #include <cpctelera.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include "asm/conio.h"
+#include "asm/amsgraph.h"
+
+#define ASCII_0 48
+
+
+void debug_uint8(char *s, uint8_t i) {
+   cputs(s);
+   cputc(i+ASCII_0);
+   cputs("\r\n");
+}
+
+void main(void) {
+   
+   uint8_t i;
+
+   clrscr();
+   plot(10,10);
+
+   i = test(10,10);
+   debug_uint8("Testing 10,10: ", i);
+
+   i = test(9,9);
+   debug_uint8("Testing 9,9: ", i);
+
+   // Loop forever
+   while (1);
+}
+
