@@ -145,11 +145,11 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
    uint8_t sh_dn = SH_DN(shift);
 
    if(p->y == Y_MIN) {
-      if(p->x == X_MIN) {
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
+      LC(nbr, p);
+      cellgp = GET_CELLGP_REF(board, nbr);
+      if(IS_ALIVE(*cellgp >> shift)) c++;
 
+      if(p->x == X_MIN) {
          CR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
@@ -168,10 +168,6 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
 
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-
          CR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
@@ -189,23 +185,19 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          LL(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
-
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
       }
    }
    
    if(p->y > Y_MIN && p->y < Y_MAX) {
-      if(p->x == X_MIN) {
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
+      UC(nbr, p);
+      cellgp = GET_CELLGP_REF(board, nbr);
+      if(IS_ALIVE(*cellgp >> shift)) c++;
+      
+      LC(nbr, p);
+      cellgp = GET_CELLGP_REF(board, nbr);
+      if(IS_ALIVE(*cellgp >> shift)) c++;
 
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-         
+      if(p->x == X_MIN) {
          UR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
@@ -231,14 +223,6 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          LR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
-
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
 
          UL(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
@@ -254,14 +238,6 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
       }
       
       if(p->x == X_MAX) {
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-
-         LC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-
          UL(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
@@ -277,6 +253,10 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
    }
 
    if(p->y == Y_MAX) {
+      UC(nbr, p);
+      cellgp = GET_CELLGP_REF(board, nbr);
+      if(IS_ALIVE(*cellgp >> shift)) c++;
+ 
       if(p->x == X_MIN) {
          UR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
@@ -285,11 +265,8 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          CR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
-
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
       }
+
       if(p->x > X_MIN && p->x < X_MAX) {
          UR(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
@@ -299,10 +276,6 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_up)) c++;
 
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
-
          UL(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
@@ -311,11 +284,8 @@ uint8_t live_neigbs_cnt(uint8_t board[BD_W][BD_H], struct Point *p, uint8_t shif
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
       }
-      if(p->x == X_MAX) {
-         UC(nbr, p);
-         cellgp = GET_CELLGP_REF(board, nbr);
-         if(IS_ALIVE(*cellgp >> shift)) c++;
 
+      if(p->x == X_MAX) {
          UL(nbr, p);
          cellgp = GET_CELLGP_REF(board, nbr);
          if(IS_ALIVE(*cellgp >> sh_dn)) c++;
