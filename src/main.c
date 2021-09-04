@@ -356,11 +356,22 @@ void main(void) {
 
    struct Point square[] = {{0,0}};
    struct Point p = {5,5};
+   uint8_t *b1;
 
    bordercolor(0);
 
    memset(&board1, 0, BD_W*BD_H);
    memset(&board2, 0, BD_W*BD_H);
+
+   //Align to next 64bit boundary
+   b1 = (uint8_t *)(((uint16_t)&board1+63) & ~(0x003f));
+
+
+   printf("board1 addr: %x\r\n", board1);
+   printf("b1     addr: %x\r\n", b1);
+   printf("board2 addr: %x\r\n", board2);
+
+   while(true);
 
    // put_on_board(board1, square, 1, 2, 2);
    // put_on_board(board1, glider, 5, 6, 6);
