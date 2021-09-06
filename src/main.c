@@ -144,165 +144,51 @@ void put_on_board(uint8_t * board, struct Point *shape, uint8_t len, uint8_t ox,
 #define SH_DN(s) (s==0 ? 6 : s-2)
 #define SH_UP(s) (s==6 ? 0 : s+2)
 
-uint8_t live_neigbs_cnt(uint8_t *board, struct Point *p, uint8_t shift, bool v) {
+uint8_t live_neigbs_cnt(uint8_t *thiscell, uint8_t shift, bool v) {
 
    uint8_t c = 0, *cell;
-   struct Point nbr;
 
    uint8_t sh_up = SH_UP(shift);
    uint8_t sh_dn = SH_DN(shift);
 
-   if(p->y == Y_MIN) {
-      LC(nbr, p);
-      cell = GET_CELL(board, nbr);
-      if(IS_ALIVE(*cell >> shift)) c++;
+   //Center left
+   cell = thiscell;
+   if(shift==0) cell--;
+   if(IS_ALIVE(*cell >> sh_dn)) c++;
 
-      if(p->x == X_MIN) {
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
+   //Upper left
+   cell = cell - BUF_WIDTH;
+   if(IS_ALIVE(*cell >> sh_dn)) c++;
 
-         LR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-      }
+   //Lower left
+   cell = cell + (BUF_WIDTH*2);
+   if(IS_ALIVE(*cell >> sh_dn)) c++;
 
-      if(p->x > X_MIN && p->x < X_MAX) {
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
 
-         LL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
+   //Center right
+   cell = thiscell;
+   if(shift==6) cell++;
+   if(IS_ALIVE(*cell >> sh_up)) c++;
 
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
+   //Upper right
+   cell = cell - BUF_WIDTH;
+   if(IS_ALIVE(*cell >> sh_up)) c++;
 
-         LR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-      }
+   //Lower right
+   cell = cell + (BUF_WIDTH*2);
+   if(IS_ALIVE(*cell >> sh_up)) c++;
 
-      if(p->x == X_MAX) {
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
 
-         LL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-      }
-   }
+   //Upper center
+   cell = thiscell - BUF_WIDTH;
+   if(IS_ALIVE(*cell >> shift)) c++;
+
+   //Lower center
+   cell = thiscell + BUF_WIDTH;
+   if(IS_ALIVE(*cell >> shift)) c++;
+
+
    
-   if(p->y > Y_MIN && p->y < Y_MAX) {
-      UC(nbr, p);
-      cell = GET_CELL(board, nbr);
-      if(IS_ALIVE(*cell >> shift)) c++;
-      
-      LC(nbr, p);
-      cell = GET_CELL(board, nbr);
-      if(IS_ALIVE(*cell >> shift)) c++;
-
-      if(p->x == X_MIN) {
-         UR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         LR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-      }
-      
-      if(p->x > X_MIN && p->x < X_MAX) {
-         UR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         LR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         UL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         LL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-      }
-      
-      if(p->x == X_MAX) {
-         UL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         LL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-      }
-   }
-
-   if(p->y == Y_MAX) {
-      UC(nbr, p);
-      cell = GET_CELL(board, nbr);
-      if(IS_ALIVE(*cell >> shift)) c++;
- 
-      if(p->x == X_MIN) {
-         UR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-      }
-
-      if(p->x > X_MIN && p->x < X_MAX) {
-         UR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         CR(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_up)) c++;
-
-         UL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-      }
-
-      if(p->x == X_MAX) {
-         UL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-
-         CL(nbr, p);
-         cell = GET_CELL(board, nbr);
-         if(IS_ALIVE(*cell >> sh_dn)) c++;
-      }
-   }
    #if SHOW_NBRCNT
       if(v && c) {
          nbr.x = p->x; nbr.y = p->y;
@@ -312,7 +198,7 @@ uint8_t live_neigbs_cnt(uint8_t *board, struct Point *p, uint8_t shift, bool v) 
          if(IS_ALIVE(*cell >> shift)) inverse();
       }
    #endif
-   
+
    return c;
 }
 
@@ -336,7 +222,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          dst_cell = GET_CELL(dst_board, p);
 
          //Evolve cell 0
-         c = live_neigbs_cnt(src_board, &p, 0, false);
+         c = live_neigbs_cnt(src_cell, 0, false);
          if(c == 3 && IS_NOT_ALIVE_0(*src_cell))
             update_cellgp(dst_cell, &p, 0, true);
          else if (c != 2 && c != 3 && IS_ALIVE_0(*src_cell))
@@ -344,7 +230,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 1
-         c = live_neigbs_cnt(src_board, &p, 2, false);
+         c = live_neigbs_cnt(src_cell, 2, false);
          if(c == 3 && IS_NOT_ALIVE_1(*src_cell))
             update_cellgp(dst_cell, &p, 2, true);
          else if (c != 2 && c != 3 && IS_ALIVE_1(*src_cell))
@@ -352,7 +238,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 2
-         c = live_neigbs_cnt(src_board, &p, 4, false);
+         c = live_neigbs_cnt(src_cell, 4, false);
          if(c == 3 && IS_NOT_ALIVE_2(*src_cell))
             update_cellgp(dst_cell, &p, 4, true);
          else if (c != 2 && c != 3 && IS_ALIVE_2(*src_cell))
@@ -360,7 +246,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 3
-         c = live_neigbs_cnt(src_board, &p, 6, false);
+         c = live_neigbs_cnt(src_cell, 6, false);
          if(c == 3 && IS_NOT_ALIVE_3(*src_cell))
             update_cellgp(dst_cell, &p, 6, true);
          else if (c != 2 && c != 3 && IS_ALIVE_3(*src_cell))
