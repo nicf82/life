@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "asm/conio.h"
 #include "asm/amsgraph.h"
+#include "asm/vidmem.h"
 
 struct Point
 {
@@ -43,7 +44,7 @@ const struct Point gospel[] = {
 
 // For mode 1 text
 #define X_MIN 1
-#define X_MAX 60
+#define X_MAX 80
 #define Y_MIN 1
 #define Y_MAX 50
 
@@ -101,36 +102,23 @@ void debug_board(uint8_t * board) {
 }
 
 #define BLKSIZ 8
-#define BLKMGN 2
 
 void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
 
-   uint16_t x = ((p->x-1)*BLKSIZ);
-   uint16_t y = 400-(p->y*BLKSIZ);
+   uint8_t x = p->x-1;
+   uint8_t y = p->y-1;
 
    *cellgp = *cellgp | (1 << shift); //Set dirty flag
    if(set) {
       *cellgp = *cellgp | (2 << shift); //Set alive
       #if DRAW
-         gpen(1);
-         move(x+BLKMGN, y+BLKMGN);
-         draw(x+BLKSIZ-BLKMGN, y+BLKMGN);
-         draw(x+BLKSIZ-BLKMGN, y+BLKSIZ-BLKMGN);
-         draw(x+BLKMGN, y+BLKSIZ-BLKMGN);
-         draw(x+BLKMGN, y+BLKMGN);
-         // cputcxy(p->x, p->y, 0xE9);
+         putblock(x, y);
       #endif
    }
    else {
       *cellgp = *cellgp & ~(2 << shift); //Set not alive &= ~(1UL << n);
       #if DRAW
-         gpen(0);
-         move(x+BLKMGN, y+BLKMGN);
-         draw(x+BLKSIZ-BLKMGN, y+BLKMGN);
-         draw(x+BLKSIZ-BLKMGN, y+BLKSIZ-BLKMGN);
-         draw(x+BLKMGN, y+BLKSIZ-BLKMGN);
-         draw(x+BLKMGN, y+BLKMGN);
-         // cputcxy(p->x, p->y, ' ');
+         clrblock(x, y);
       #endif
    }
 }
@@ -280,18 +268,17 @@ void main(void) {
 
    uint8_t *board1, *board2;
    struct Point p = {0,0};
-
+   
    bordercolor(0);
    // bordercolor(9);
    setink(0, 0, 0);  //Paper
    setink(1, 21, 21);  //Pen
-   clrscr();
 
-   move(0, 399);
-   draw(0, 399-Y_MAX*BLKSIZ);
-   draw(X_MAX*BLKSIZ, 399-Y_MAX*BLKSIZ);  
-   draw(X_MAX*BLKSIZ, 399);  
-   draw(0, 399);  
+   move(0, 0);
+   draw(0, (Y_MAX*BLKSIZ)-1);
+   draw((X_MAX*BLKSIZ)-1, (Y_MAX*BLKSIZ)-1);  
+   draw((X_MAX*BLKSIZ)-1, 0);  
+   draw(0, 0);  
 
    //Clear buffer then align 2 boards to next 64bit boundary
    memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_WIDTH_MSK);
@@ -300,7 +287,7 @@ void main(void) {
 
    // put_on_board(board1, glider, 5, 3, 3);
    // put_on_board(board1, square, 1, 5, 5);
-   put_on_board(board1, gospel, 36, 0, 0);
+   put_on_board(board1, gospel, 36, 30, 0);
 
    while(true) {
       evolve(board1, board2);
