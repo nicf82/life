@@ -43,13 +43,13 @@ const struct Point gospel[] = {
 
 // For mode 1 text
 #define X_MIN 1
-#define X_MAX 40
+#define X_MAX 60
 #define Y_MIN 1
-#define Y_MAX 25
+#define Y_MAX 50
 
 //New board stuff
-#define BUF_WIDTH 16 //16 addresses
-#define BUF_WIDTH_MSK 0x000F
+#define BUF_WIDTH 32 //32 addresses
+#define BUF_WIDTH_MSK 0x001F
 #define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + (((p.x-1)/4)+1)
 
 #define BD_DATA_W (X_MAX/4)  //The buffer row width is 16, but only 10 bits are used
@@ -58,20 +58,20 @@ const struct Point gospel[] = {
 
 uint8_t boardbuffer[BD_BUFSIZ];
 
-#define IS_ALIVE(x) (x & (uint8_t)2)
-#define IS_NOT_ALIVE(x) !(x & (uint8_t)2)
+#define IS_ALIVE(x, bit) (x & (uint8_t)bit)
+#define IS_NOT_ALIVE(x, bit) !IS_ALIVE(x, bit)
 
-#define IS_ALIVE_0(x) x & (uint8_t)2
-#define IS_NOT_ALIVE_0(x) !(x & (uint8_t)2)
+#define IS_ALIVE_0(x) IS_ALIVE(x, 2)
+#define IS_NOT_ALIVE_0(x) IS_NOT_ALIVE(x, 2)
 
-#define IS_ALIVE_1(x) x & (uint8_t)8
-#define IS_NOT_ALIVE_1(x) !(x & (uint8_t)8)
+#define IS_ALIVE_1(x) IS_ALIVE(x, 8)
+#define IS_NOT_ALIVE_1(x) IS_NOT_ALIVE(x, 8)
 
-#define IS_ALIVE_2(x) x & (uint8_t)32
-#define IS_NOT_ALIVE_2(x) !(x & (uint8_t)32)
+#define IS_ALIVE_2(x) IS_ALIVE(x, 32)
+#define IS_NOT_ALIVE_2(x) IS_NOT_ALIVE(x, 32)
 
-#define IS_ALIVE_3(x) x & (uint8_t)128
-#define IS_NOT_ALIVE_3(x) !(x & (uint8_t)128)
+#define IS_ALIVE_3(x) IS_ALIVE(x, 128)
+#define IS_NOT_ALIVE_3(x) IS_NOT_ALIVE(x, 128)
 
 #define ASCII_0 48
 #define ASCII_a 32
@@ -100,19 +100,37 @@ void debug_board(uint8_t * board) {
    }
 }
 
+#define BLKSIZ 8
+#define BLKMGN 2
+
 void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
+
+   uint16_t x = ((p->x-1)*BLKSIZ);
+   uint16_t y = 400-(p->y*BLKSIZ);
 
    *cellgp = *cellgp | (1 << shift); //Set dirty flag
    if(set) {
       *cellgp = *cellgp | (2 << shift); //Set alive
       #if DRAW
-         cputcxy(p->x, p->y, 0xE9);
+         gpen(1);
+         move(x+BLKMGN, y+BLKMGN);
+         draw(x+BLKSIZ-BLKMGN, y+BLKMGN);
+         draw(x+BLKSIZ-BLKMGN, y+BLKSIZ-BLKMGN);
+         draw(x+BLKMGN, y+BLKSIZ-BLKMGN);
+         draw(x+BLKMGN, y+BLKMGN);
+         // cputcxy(p->x, p->y, 0xE9);
       #endif
    }
    else {
       *cellgp = *cellgp & ~(2 << shift); //Set not alive &= ~(1UL << n);
       #if DRAW
-         cputcxy(p->x, p->y, ' ');
+         gpen(0);
+         move(x+BLKMGN, y+BLKMGN);
+         draw(x+BLKSIZ-BLKMGN, y+BLKMGN);
+         draw(x+BLKSIZ-BLKMGN, y+BLKSIZ-BLKMGN);
+         draw(x+BLKMGN, y+BLKSIZ-BLKMGN);
+         draw(x+BLKMGN, y+BLKMGN);
+         // cputcxy(p->x, p->y, ' ');
       #endif
    }
 }
@@ -129,18 +147,6 @@ void put_on_board(uint8_t * board, struct Point *shape, uint8_t len, uint8_t ox,
       update_cellgp(cell, &p, shift, true);
    }
 }
-
-#define UL(nbr, p) nbr.x = p->x-1; nbr.y = p->y-1
-#define UC(nbr, p) nbr.x = p->x;   nbr.y = p->y-1
-#define UR(nbr, p) nbr.x = p->x+1; nbr.y = p->y-1
-
-#define CL(nbr, p) nbr.x = p->x-1; nbr.y = p->y
-#define CR(nbr, p) nbr.x = p->x+1; nbr.y = p->y
-
-#define LL(nbr, p) nbr.x = p->x-1; nbr.y = p->y+1
-#define LC(nbr, p) nbr.x = p->x;   nbr.y = p->y+1
-#define LR(nbr, p) nbr.x = p->x+1; nbr.y = p->y+1
-
 #define SH_DN(s) (s==0 ? 6 : s-2)
 #define SH_UP(s) (s==6 ? 0 : s+2)
 
@@ -154,38 +160,38 @@ uint8_t live_neigbs_cnt(uint8_t *thiscell, uint8_t shift, bool v) {
    //Center left
    cell = thiscell;
    if(shift==0) cell--;
-   if(IS_ALIVE(*cell >> sh_dn)) c++;
+   if(IS_ALIVE_0(*cell >> sh_dn)) c++;
 
    //Upper left
    cell = cell - BUF_WIDTH;
-   if(IS_ALIVE(*cell >> sh_dn)) c++;
+   if(IS_ALIVE_0(*cell >> sh_dn)) c++;
 
    //Lower left
    cell = cell + (BUF_WIDTH*2);
-   if(IS_ALIVE(*cell >> sh_dn)) c++;
+   if(IS_ALIVE_0(*cell >> sh_dn)) c++;
 
 
    //Center right
    cell = thiscell;
    if(shift==6) cell++;
-   if(IS_ALIVE(*cell >> sh_up)) c++;
+   if(IS_ALIVE_0(*cell >> sh_up)) c++;
 
    //Upper right
    cell = cell - BUF_WIDTH;
-   if(IS_ALIVE(*cell >> sh_up)) c++;
+   if(IS_ALIVE_0(*cell >> sh_up)) c++;
 
    //Lower right
    cell = cell + (BUF_WIDTH*2);
-   if(IS_ALIVE(*cell >> sh_up)) c++;
+   if(IS_ALIVE_0(*cell >> sh_up)) c++;
 
 
    //Upper center
    cell = thiscell - BUF_WIDTH;
-   if(IS_ALIVE(*cell >> shift)) c++;
+   if(IS_ALIVE_0(*cell >> shift)) c++;
 
    //Lower center
    cell = thiscell + BUF_WIDTH;
-   if(IS_ALIVE(*cell >> shift)) c++;
+   if(IS_ALIVE_0(*cell >> shift)) c++;
 
 
    
@@ -275,16 +281,17 @@ void main(void) {
    uint8_t *board1, *board2;
    struct Point p = {0,0};
 
-   bordercolor(9);
+   bordercolor(0);
+   // bordercolor(9);
    setink(0, 0, 0);  //Paper
    setink(1, 21, 21);  //Pen
    clrscr();
 
-   // move(0, 0);
-   // draw(0, 399);
-   // draw(639, 399);  
-   // draw(639, 0);  
-   // draw(0, 0);  
+   move(0, 399);
+   draw(0, 399-Y_MAX*BLKSIZ);
+   draw(X_MAX*BLKSIZ, 399-Y_MAX*BLKSIZ);  
+   draw(X_MAX*BLKSIZ, 399);  
+   draw(0, 399);  
 
    //Clear buffer then align 2 boards to next 64bit boundary
    memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_WIDTH_MSK);
@@ -293,7 +300,7 @@ void main(void) {
 
    // put_on_board(board1, glider, 5, 3, 3);
    // put_on_board(board1, square, 1, 5, 5);
-   put_on_board(board1, gospel, 36, 1, 1);
+   put_on_board(board1, gospel, 36, 0, 0);
 
    while(true) {
       evolve(board1, board2);
