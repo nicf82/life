@@ -506,6 +506,19 @@ _screensize::
 	ld	(de),a
 	ret
 
+; unsigned char rdkey (void);
+; Returns a key if one is available from the keyboard
+; NOT TESTED
+
+.globl _rdkey
+
+_rdkey::
+	ld l,#0
+	call 0xBB1B	; KM READ KEY
+	ret nc
+	ld l,a
+	ret
+
 ; void cputhex8 (unsigned char val);
 ; void cputhex16 (unsigned val);
 ; These shouldn't be here... 

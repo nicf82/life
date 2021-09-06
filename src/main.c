@@ -30,6 +30,8 @@ struct Point
    uint8_t y;
 };
 
+const struct Point square[] = {{0,0}};
+
 const struct Point glider[] = {{2,0}, {0,1}, {2,1}, {1,2}, {2,2}};
 
 const struct Point gospel[] = {
@@ -46,13 +48,13 @@ const struct Point gospel[] = {
 #define Y_MAX 25
 
 //New board stuff
-#define BUF_WIDTH 0x0010 //16 addresses
-#define BUF_WIDTH_MSK BUF_WIDTH-1
-#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y-1)) + ((p.x-1)/4)
+#define BUF_WIDTH 16 //16 addresses
+#define BUF_WIDTH_MSK 0x000F
+#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + (((p.x-1)/4)+1)
 
-#define BD_DATA_W X_MAX/4  //The buffer row width is 16, but only 10 bits are used
-#define BD_H Y_MAX
-#define BD_BUFSIZ BUF_WIDTH*BD_H*2+BUF_WIDTH_MSK //Enough for 2 boards to align to a 64bit boundary
+#define BD_DATA_W (X_MAX/4)  //The buffer row width is 16, but only 10 bits are used
+#define BD_H (Y_MAX+2)  //The number of rows in the buffer has 2 extra for the edge's 0ed neighbours
+#define BD_BUFSIZ (BUF_WIDTH*BD_H*2+BUF_WIDTH_MSK) //Enough for 2 boards to align to a 64bit boundary
 
 uint8_t boardbuffer[BD_BUFSIZ];
 
@@ -75,6 +77,7 @@ uint8_t boardbuffer[BD_BUFSIZ];
 #define ASCII_a 32
 
 #define DRAW 1
+#define SHOW_NBRCNT 0
 
 void debug_str_uint8(char *s, uint8_t i) {
    cputs(s);
@@ -84,9 +87,10 @@ void debug_str_uint8(char *s, uint8_t i) {
 
 void debug_board(uint8_t * board) {
    uint8_t *cell;
+   gotoxy(1,1);
    for (uint8_t y = 0; y < BD_H; y++) {
       printf("%02d:", y);
-      for(uint8_t x = 0; x < BD_DATA_W; x++) {
+      for(uint8_t x = 0; x < BD_DATA_W+2; x++) {
          cell = board + (BUF_WIDTH*y) + x;
          if(*cell) inverse();
          printf(" %02x", *cell);
@@ -140,9 +144,9 @@ void put_on_board(uint8_t * board, struct Point *shape, uint8_t len, uint8_t ox,
 #define SH_DN(s) (s==0 ? 6 : s-2)
 #define SH_UP(s) (s==6 ? 0 : s+2)
 
-uint8_t live_neigbs_cnt(uint8_t *board, struct Point *p, uint8_t shift) {
+uint8_t live_neigbs_cnt(uint8_t *board, struct Point *p, uint8_t shift, bool v) {
 
-   uint8_t c = 0, *cell, start = 0, end = 8;
+   uint8_t c = 0, *cell;
    struct Point nbr;
 
    uint8_t sh_up = SH_UP(shift);
@@ -299,15 +303,16 @@ uint8_t live_neigbs_cnt(uint8_t *board, struct Point *p, uint8_t shift) {
          if(IS_ALIVE(*cell >> sh_dn)) c++;
       }
    }
-
-   // if(c) {
-   //    nbr.x = p->x; nbr.y = p->y;
-   //    cell = GET_CELL(board, nbr);
-   //    if(IS_ALIVE(*cell >> shift)) inverse();
-   //    cputcxy(p->x, p->y, c+ASCII_0);
-   //    if(IS_ALIVE(*cell >> shift)) inverse();
-   // }
-
+   #if SHOW_NBRCNT
+      if(v && c) {
+         nbr.x = p->x; nbr.y = p->y;
+         cell = GET_CELL(board, nbr);
+         if(IS_ALIVE(*cell >> shift)) inverse();
+         cputcxy(p->x, p->y, c+ASCII_0);
+         if(IS_ALIVE(*cell >> shift)) inverse();
+      }
+   #endif
+   
    return c;
 }
 
@@ -318,13 +323,20 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
    memcpy(dst_board, src_board, BUF_WIDTH*BD_H);
 
    for (p.y = Y_MIN; p.y <= Y_MAX; p.y++) {
+
+      // gotoxy(1,1);
+      // printf("evolving row %d ", p.y);
+
+      // for(j = 0; j < 192; j++)
+      //    for(k = 0; k < 255; k++);
+
       for(p.x = X_MIN; p.x <= X_MAX; ) {
 
          src_cell = GET_CELL(src_board, p);
          dst_cell = GET_CELL(dst_board, p);
 
          //Evolve cell 0
-         c = live_neigbs_cnt(src_board, &p, 0);
+         c = live_neigbs_cnt(src_board, &p, 0, false);
          if(c == 3 && IS_NOT_ALIVE_0(*src_cell))
             update_cellgp(dst_cell, &p, 0, true);
          else if (c != 2 && c != 3 && IS_ALIVE_0(*src_cell))
@@ -332,7 +344,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 1
-         c = live_neigbs_cnt(src_board, &p, 2);
+         c = live_neigbs_cnt(src_board, &p, 2, false);
          if(c == 3 && IS_NOT_ALIVE_1(*src_cell))
             update_cellgp(dst_cell, &p, 2, true);
          else if (c != 2 && c != 3 && IS_ALIVE_1(*src_cell))
@@ -340,7 +352,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 2
-         c = live_neigbs_cnt(src_board, &p, 4);
+         c = live_neigbs_cnt(src_board, &p, 4, false);
          if(c == 3 && IS_NOT_ALIVE_2(*src_cell))
             update_cellgp(dst_cell, &p, 4, true);
          else if (c != 2 && c != 3 && IS_ALIVE_2(*src_cell))
@@ -348,37 +360,57 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 3
-         c = live_neigbs_cnt(src_board, &p, 6);
+         c = live_neigbs_cnt(src_board, &p, 6, false);
          if(c == 3 && IS_NOT_ALIVE_3(*src_cell))
             update_cellgp(dst_cell, &p, 6, true);
          else if (c != 2 && c != 3 && IS_ALIVE_3(*src_cell))
             update_cellgp(dst_cell, &p, 6, false);
          p.x++;
-         
       }
+
+      // for(j = 0; j < 192; j++)
+      //    for(k = 0; k < 255; k++);
    }
 }
 
 void main(void) {
 
-   struct Point square[] = {{0,0}};
-   struct Point p = {5,5};
    uint8_t *board1, *board2;
+   struct Point p = {0,0};
 
    bordercolor(0);
 
    //Clear buffer then align 2 boards to next 64bit boundary
    memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_WIDTH_MSK);
    board1 = (uint8_t*)(((uint16_t)&boardbuffer+BUF_WIDTH_MSK) & ~(BUF_WIDTH_MSK));
-   board2 = board1 + BUF_WIDTH*BD_H;
-   
+   board2 = board1 + (BUF_WIDTH*BD_H);
+
    // put_on_board(board1, glider, 5, 3, 3);
    // put_on_board(board1, square, 1, 5, 5);
    put_on_board(board1, gospel, 36, 1, 1);
 
    while(true) {
-      evolve(board1, board2);   
-      evolve(board2, board1);   
+      evolve(board1, board2);
+      evolve(board2, board1);
    }
-}
 
+   // debug_board(board1);
+
+   // while(true) 
+   //    if(rdkey()==' ') 
+   //       break;
+
+
+   // for (p.y = Y_MIN; p.y <= Y_MAX; p.y++) {
+   //    for(p.x = X_MIN; p.x <= X_MAX; ) {
+   //       live_neigbs_cnt(board1, &p, 0, true);
+   //       p.x++;
+   //       live_neigbs_cnt(board1, &p, 2, true);
+   //       p.x++;
+   //       live_neigbs_cnt(board1, &p, 4, true);
+   //       p.x++;
+   //       live_neigbs_cnt(board1, &p, 6, true);
+   //       p.x++;
+   //    }
+   // }
+}

@@ -23,3 +23,5 @@ extern void cputsxy(unsigned char x, unsigned char y, const char* s);
 
 extern unsigned char rdcurchr(void);
 extern void wrcurchr(unsigned char);
+
+extern unsigned char rdkey(void);
