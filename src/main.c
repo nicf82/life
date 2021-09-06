@@ -106,7 +106,7 @@ void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
    if(set) {
       *cellgp = *cellgp | (2 << shift); //Set alive
       #if DRAW
-         cputcxy(p->x, p->y, 0xCE);
+         cputcxy(p->x, p->y, 0xE9);
       #endif
    }
    else {
@@ -208,6 +208,10 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
 
    memcpy(dst_board, src_board, BUF_WIDTH*BD_H);
 
+   //Skip past 0 filled margin row 0
+   src_cell = src_board + BUF_WIDTH;
+   dst_cell = dst_board + BUF_WIDTH;
+
    for (p.y = Y_MIN; p.y <= Y_MAX; p.y++) {
 
       // gotoxy(1,1);
@@ -215,11 +219,12 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
 
       // for(j = 0; j < 192; j++)
       //    for(k = 0; k < 255; k++);
+      
+      //Skip past 0 filled margin column 0
+      src_cell++;
+      dst_cell++;
 
       for(p.x = X_MIN; p.x <= X_MAX; ) {
-
-         src_cell = GET_CELL(src_board, p);
-         dst_cell = GET_CELL(dst_board, p);
 
          //Evolve cell 0
          c = live_neigbs_cnt(src_cell, 0, false);
@@ -252,7 +257,13 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          else if (c != 2 && c != 3 && IS_ALIVE_3(*src_cell))
             update_cellgp(dst_cell, &p, 6, false);
          p.x++;
+
+         src_cell++;
+         dst_cell++;
       }
+
+      src_cell += (BUF_WIDTH-BD_DATA_W-1);
+      dst_cell += (BUF_WIDTH-BD_DATA_W-1);
 
       // for(j = 0; j < 192; j++)
       //    for(k = 0; k < 255; k++);
@@ -264,7 +275,16 @@ void main(void) {
    uint8_t *board1, *board2;
    struct Point p = {0,0};
 
-   bordercolor(0);
+   bordercolor(9);
+   setink(0, 0, 0);  //Paper
+   setink(1, 21, 21);  //Pen
+   clrscr();
+
+   // move(0, 0);
+   // draw(0, 399);
+   // draw(639, 399);  
+   // draw(639, 0);  
+   // draw(0, 0);  
 
    //Clear buffer then align 2 boards to next 64bit boundary
    memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_WIDTH_MSK);

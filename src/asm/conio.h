@@ -7,8 +7,12 @@
 
 extern void txtinit(void);
 extern void clrscr(void);
+
+extern void setink(unsigned char pen, unsigned char fst, unsigned char snd);
 extern unsigned char bordercolor(unsigned char color);
 extern unsigned char textcolor(unsigned char color);
+extern unsigned char bgcolor(unsigned char color);
+
 extern void inverse(void);
 
 extern void gotox(unsigned char x);

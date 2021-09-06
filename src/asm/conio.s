@@ -60,8 +60,19 @@ _txtinit::
 	.area _CODE
 
 _clrscr::
-	ld	a,#1
 	call 	0xBC0E	; SCR SET MODE
+	ret
+
+; void setmode (unsigned char mode);
+; Clear the whole screen and put the cursor into the top left corner 
+; TESTED
+
+.globl _setmode	
+	.area _CODE
+
+_setmode::
+	ld	a,#1
+	call 	0xBC14	; SCR SET MODE
 	ret
 
 ; unsigned char kbhit (void);
@@ -518,6 +529,32 @@ _rdkey::
 	ret nc
 	ld l,a
 	ret
+
+
+; void setink (unsigned char pen, unsigned char fst, unsigned char snd);
+; Set the pen color, if two values are supplied the colors will alternate (flash)
+
+.globl _setink
+
+_setink::
+
+	ld	hl,#2
+	add	hl,sp
+	ld	a,(hl)
+
+	ld	hl,#3
+	add	hl,sp
+	ld	b,(hl)
+
+	ld	hl,#4
+	add	hl,sp
+	ld	c,(hl)
+
+	call	0xBC32 ; SCR SET INK
+	ret
+
+
+
 
 ; void cputhex8 (unsigned char val);
 ; void cputhex16 (unsigned val);
