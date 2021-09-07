@@ -49,11 +49,11 @@ const struct Point gosper[] = {
 #define Y_MAX 50
 
 //New board stuff
-#define BUF_WIDTH 32 //32 addresses
-#define BUF_WIDTH_MSK 0x001F
-#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + (((p.x-1)/4)+1)
+#define BUF_WIDTH 16 //16 addresses
+#define BUF_WIDTH_MSK 0x000F
+#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + (((p.x-1)/8)+1)
 
-#define BD_DATA_W (X_MAX/4)  //The buffer row width is 16, but only 10 bits are used
+#define BD_DATA_W (X_MAX/8)  //The buffer row width is 16, but only 10 bits are used
 #define BD_H (Y_MAX+2)  //The number of rows in the buffer has 2 extra for the edge's 0ed neighbours
 #define BD_BUFSIZ (BUF_WIDTH*BD_H*2+BUF_WIDTH_MSK) //Enough for 2 boards to align to a 64bit boundary
 
@@ -62,17 +62,30 @@ uint8_t boardbuffer[BD_BUFSIZ];
 #define IS_ALIVE(x, bit) (x & (uint8_t)bit)
 #define IS_NOT_ALIVE(x, bit) !IS_ALIVE(x, bit)
 
-#define IS_ALIVE_0(x) IS_ALIVE(x, 2)
-#define IS_NOT_ALIVE_0(x) IS_NOT_ALIVE(x, 2)
 
-#define IS_ALIVE_1(x) IS_ALIVE(x, 8)
-#define IS_NOT_ALIVE_1(x) IS_NOT_ALIVE(x, 8)
+#define IS_ALIVE_0(x) IS_ALIVE(x, 1)
+#define IS_NOT_ALIVE_0(x) IS_NOT_ALIVE(x, 1)
 
-#define IS_ALIVE_2(x) IS_ALIVE(x, 32)
-#define IS_NOT_ALIVE_2(x) IS_NOT_ALIVE(x, 32)
+#define IS_ALIVE_1(x) IS_ALIVE(x, 2)
+#define IS_NOT_ALIVE_1(x) IS_NOT_ALIVE(x, 2)
 
-#define IS_ALIVE_3(x) IS_ALIVE(x, 128)
-#define IS_NOT_ALIVE_3(x) IS_NOT_ALIVE(x, 128)
+#define IS_ALIVE_2(x) IS_ALIVE(x, 4)
+#define IS_NOT_ALIVE_2(x) IS_NOT_ALIVE(x, 4)
+
+#define IS_ALIVE_3(x) IS_ALIVE(x, 8)
+#define IS_NOT_ALIVE_3(x) IS_NOT_ALIVE(x, 8)
+
+#define IS_ALIVE_4(x) IS_ALIVE(x, 16)
+#define IS_NOT_ALIVE_4(x) IS_NOT_ALIVE(x, 16)
+
+#define IS_ALIVE_5(x) IS_ALIVE(x, 32)
+#define IS_NOT_ALIVE_5(x) IS_NOT_ALIVE(x, 32)
+
+#define IS_ALIVE_6(x) IS_ALIVE(x, 64)
+#define IS_NOT_ALIVE_6(x) IS_NOT_ALIVE(x, 64)
+
+#define IS_ALIVE_7(x) IS_ALIVE(x, 128)
+#define IS_NOT_ALIVE_7(x) IS_NOT_ALIVE(x, 128)
 
 #define ASCII_0 48
 #define ASCII_a 32
@@ -108,15 +121,14 @@ void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
    uint8_t x = p->x-1;
    uint8_t y = p->y-1;
 
-   *cellgp = *cellgp | (1 << shift); //Set dirty flag
    if(set) {
-      *cellgp = *cellgp | (2 << shift); //Set alive
+      *cellgp = *cellgp | (1 << shift); //Set alive
       #if DRAW
          putblock(x, y);
       #endif
    }
    else {
-      *cellgp = *cellgp & ~(2 << shift); //Set not alive &= ~(1UL << n);
+      *cellgp = *cellgp & ~(1 << shift); //Set not alive &= ~(1UL << n);
       #if DRAW
          clrblock(x, y);
       #endif
@@ -131,12 +143,12 @@ void put_on_board(uint8_t * board, struct Point *shape, uint8_t len, uint8_t ox,
       p.y = oy+shape[i].y;
 
       cell = GET_CELL(board, p);
-      shift = ((p.x-1)%4)*2;
+      shift = (p.x-1)%8;
       update_cellgp(cell, &p, shift, true);
    }
 }
-#define SH_DN(s) (s==0 ? 6 : s-2)
-#define SH_UP(s) (s==6 ? 0 : s+2)
+#define SH_DN(s) (s==0 ? 7 : s-1)
+#define SH_UP(s) (s==7 ? 0 : s+1)
 
 uint8_t live_neigbs_cnt(uint8_t *thiscell, uint8_t shift, bool v) {
 
@@ -161,7 +173,7 @@ uint8_t live_neigbs_cnt(uint8_t *thiscell, uint8_t shift, bool v) {
 
    //Center right
    cell = thiscell;
-   if(shift==6) cell++;
+   if(shift==7) cell++;
    if(IS_ALIVE_0(*cell >> sh_up)) c++;
 
    //Upper right
@@ -229,27 +241,59 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          p.x++;
 
          //Evolve cell 1
-         c = live_neigbs_cnt(src_cell, 2, false);
+         c = live_neigbs_cnt(src_cell, 1, false);
          if(c == 3 && IS_NOT_ALIVE_1(*src_cell))
-            update_cellgp(dst_cell, &p, 2, true);
+            update_cellgp(dst_cell, &p, 1, true);
          else if (c != 2 && c != 3 && IS_ALIVE_1(*src_cell))
-            update_cellgp(dst_cell, &p, 2, false);
+            update_cellgp(dst_cell, &p, 1, false);
          p.x++;
 
          //Evolve cell 2
-         c = live_neigbs_cnt(src_cell, 4, false);
+         c = live_neigbs_cnt(src_cell, 2, false);
          if(c == 3 && IS_NOT_ALIVE_2(*src_cell))
-            update_cellgp(dst_cell, &p, 4, true);
+            update_cellgp(dst_cell, &p, 2, true);
          else if (c != 2 && c != 3 && IS_ALIVE_2(*src_cell))
-            update_cellgp(dst_cell, &p, 4, false);
+            update_cellgp(dst_cell, &p, 2, false);
          p.x++;
 
          //Evolve cell 3
-         c = live_neigbs_cnt(src_cell, 6, false);
+         c = live_neigbs_cnt(src_cell, 3, false);
          if(c == 3 && IS_NOT_ALIVE_3(*src_cell))
-            update_cellgp(dst_cell, &p, 6, true);
+            update_cellgp(dst_cell, &p, 3, true);
          else if (c != 2 && c != 3 && IS_ALIVE_3(*src_cell))
+            update_cellgp(dst_cell, &p, 3, false);
+         p.x++;
+
+         //Evolve cell 4
+         c = live_neigbs_cnt(src_cell, 4, false);
+         if(c == 3 && IS_NOT_ALIVE_4(*src_cell))
+            update_cellgp(dst_cell, &p, 4, true);
+         else if (c != 2 && c != 3 && IS_ALIVE_4(*src_cell))
+            update_cellgp(dst_cell, &p, 4, false);
+         p.x++;
+
+         //Evolve cell 5
+         c = live_neigbs_cnt(src_cell, 5, false);
+         if(c == 3 && IS_NOT_ALIVE_5(*src_cell))
+            update_cellgp(dst_cell, &p, 5, true);
+         else if (c != 2 && c != 3 && IS_ALIVE_5(*src_cell))
+            update_cellgp(dst_cell, &p, 5, false);
+         p.x++;
+
+         //Evolve cell 6
+         c = live_neigbs_cnt(src_cell, 6, false);
+         if(c == 3 && IS_NOT_ALIVE_6(*src_cell))
+            update_cellgp(dst_cell, &p, 6, true);
+         else if (c != 2 && c != 3 && IS_ALIVE_6(*src_cell))
             update_cellgp(dst_cell, &p, 6, false);
+         p.x++;
+
+         //Evolve cell 7
+         c = live_neigbs_cnt(src_cell, 7, false);
+         if(c == 3 && IS_NOT_ALIVE_7(*src_cell))
+            update_cellgp(dst_cell, &p, 7, true);
+         else if (c != 2 && c != 3 && IS_ALIVE_7(*src_cell))
+            update_cellgp(dst_cell, &p, 7, false);
          p.x++;
 
          src_cell++;
