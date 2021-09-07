@@ -334,23 +334,22 @@ void main(void) {
 
    //1,1 IS THE MINIMUM
    // put_on_board(board1, glider, 5, 3, 3);
-   //put_on_board(board1, square, 1, 2, 1);
+   put_on_board(board1, square, 1, 3, 2);
+   put_on_board(board1, square, 1, 1, 2);
    //put_on_board(board1, gosper, 36, 1, 1);
-   put_on_board(board1, r_pentomino, 5, 47, 20);
+   // put_on_board(board1, r_pentomino, 5, 47, 20);
 
+   gotoxy(1, 10);
+   printf("Board at %04x\r\n", board1);
 
-   
-   // gotoxy(1, 10);
-   // printf("Board at %04x\r\n", board1);
+   cell = board1 + BUF_WIDTH;
+   printf("Cell at %04x\r\n", cell);
 
-   // cell = board1 + BUF_WIDTH;
-   // printf("Cell at %04x\r\n", cell);
+   r = asmevolve(cell+BUF_WIDTH+1); //+1 because currently the margin is 1 byte not 1 bit! FIXME
 
-   // r = asmevolve(cell+1);
+   printf("Cell was %x\r\n", r);
 
-   // printf("Cell was %x\r\n", r);
-
-   // while(true);
+   while(true);
 
    while(true) {
       evolve(board1, board2);

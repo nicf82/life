@@ -1,1 +1,1 @@
-extern unsigned char asmevolve(unsigned char *top);
+extern unsigned char asmevolve(unsigned char *cell);
