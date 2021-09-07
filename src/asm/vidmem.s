@@ -18,13 +18,11 @@ _putblock::
 
   call GetScreenPos
 
-  ld (hl), #0x60
+  ld (hl), #0xE0
 	call GetNextLine
-  ld (hl), #0xF0
+  ld (hl), #0xE0
 	call GetNextLine
-  ld (hl), #0xF0
-	call GetNextLine
-  ld (hl), #0x60
+  ld (hl), #0xE0
 
   ret
 

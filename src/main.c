@@ -24,6 +24,7 @@
 #include "asm/conio.h"
 #include "asm/amsgraph.h"
 #include "asm/vidmem.h"
+#include "asm/life.h"
 
 struct Point
 {
@@ -34,6 +35,8 @@ struct Point
 const struct Point square[] = {{0,0}};
 
 const struct Point glider[] = {{2,0}, {0,1}, {2,1}, {1,2}, {2,2}};
+
+const struct Point r_pentomino[] = {{1,0}, {2,0}, {0,1}, {1,1}, {1,2}};
 
 const struct Point gosper[] = {
   {0,6},{1,6},{0,7},{1,7},
@@ -310,7 +313,7 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
 
 void main(void) {
 
-   uint8_t *board1, *board2;
+   uint8_t *board1, *board2, *cell, r;
    struct Point p = {0,0};
    
    bordercolor(0);
@@ -331,8 +334,23 @@ void main(void) {
 
    //1,1 IS THE MINIMUM
    // put_on_board(board1, glider, 5, 3, 3);
-   // put_on_board(board1, square, 1, 5, 5);
-   put_on_board(board1, gosper, 36, 1, 1);
+   //put_on_board(board1, square, 1, 2, 1);
+   //put_on_board(board1, gosper, 36, 1, 1);
+   put_on_board(board1, r_pentomino, 5, 47, 20);
+
+
+   
+   // gotoxy(1, 10);
+   // printf("Board at %04x\r\n", board1);
+
+   // cell = board1 + BUF_WIDTH;
+   // printf("Cell at %04x\r\n", cell);
+
+   // r = asmevolve(cell+1);
+
+   // printf("Cell was %x\r\n", r);
+
+   // while(true);
 
    while(true) {
       evolve(board1, board2);
