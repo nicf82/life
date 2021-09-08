@@ -53,12 +53,12 @@ const struct Point gosper[] = {
 
 //New board stuff
 #define BUF_WIDTH 16 //16 addresses
-#define BUF_WIDTH_MSK 0x000F
-#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + (((p.x-1)/8)+1)
+#define BUF_ALIGN_MSK 0x000F
+#define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + ((p.x-1)/8)
 
 #define BD_DATA_W (X_MAX/8)  //The buffer row width is 16, but only 10 bits are used
 #define BD_H (Y_MAX+2)  //The number of rows in the buffer has 2 extra for the edge's 0ed neighbours
-#define BD_BUFSIZ (BUF_WIDTH*BD_H*2+BUF_WIDTH_MSK) //Enough for 2 boards to align to a 64bit boundary
+#define BD_BUFSIZ (BUF_WIDTH*BD_H*2+BUF_ALIGN_MSK) //Enough for 2 boards to align to a 64bit boundary
 
 uint8_t boardbuffer[BD_BUFSIZ];
 
@@ -223,16 +223,6 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
 
    for (p.y = Y_MIN; p.y <= Y_MAX; p.y++) {
 
-      // gotoxy(1,1);
-      // printf("evolving row %d ", p.y);
-
-      // for(j = 0; j < 192; j++)
-      //    for(k = 0; k < 255; k++);
-      
-      //Skip past 0 filled margin column 0
-      src_cell++;
-      dst_cell++;
-
       for(p.x = X_MIN; p.x <= X_MAX; ) {
 
          //Evolve cell 0
@@ -303,8 +293,8 @@ void evolve(uint8_t *src_board, uint8_t *dst_board) {
          dst_cell++;
       }
 
-      src_cell += (BUF_WIDTH-BD_DATA_W-1);
-      dst_cell += (BUF_WIDTH-BD_DATA_W-1);
+      src_cell += (BUF_WIDTH-BD_DATA_W);
+      dst_cell += (BUF_WIDTH-BD_DATA_W);
 
       // for(j = 0; j < 192; j++)
       //    for(k = 0; k < 255; k++);
@@ -328,8 +318,8 @@ void main(void) {
    draw(0, 0);  
 
    //Clear buffer then align 2 boards to next 64bit boundary
-   memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_WIDTH_MSK);
-   board1 = (uint8_t*)(((uint16_t)&boardbuffer+BUF_WIDTH_MSK) & ~(BUF_WIDTH_MSK));
+   memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_ALIGN_MSK);
+   board1 = (uint8_t*)(((uint16_t)&boardbuffer+BUF_ALIGN_MSK) & ~(BUF_ALIGN_MSK));
    board2 = board1 + (BUF_WIDTH*BD_H);
 
    //1,1 IS THE MINIMUM
@@ -340,12 +330,13 @@ void main(void) {
    // put_on_board(board1, r_pentomino, 5, 47, 20);
 
    gotoxy(1, 10);
-   printf("Board at %04x\r\n", board1);
+   printf("Board1 at %04x\r\n", board1);
+   printf("Board2 at %04x\r\n", board2);
 
    cell = board1 + BUF_WIDTH;
    printf("Cell at %04x\r\n", cell);
 
-   r = asmevolve(cell+BUF_WIDTH+1); //+1 because currently the margin is 1 byte not 1 bit! FIXME
+   r = asmevolve(cell+BUF_WIDTH);
 
    printf("Cell was %x\r\n", r);
 

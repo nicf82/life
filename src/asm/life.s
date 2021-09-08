@@ -27,7 +27,7 @@ _asme_nextbit::
   ;;; These 7 only work for bit 1 to 6, 0 and 7 need a neighboring byte
 
   ;Top byte
-  sub hl, #16 ;Needs to be a 16 bit operation using sub - prob do it once and store the offset in memory
+  ;sub hl, #16 ;Needs to be a 16 bit operation using sub - prob do it once and store the offset in memory
 
   ;Check top-left - bits 1 to 6
   ld a, (hl)
@@ -53,7 +53,7 @@ _asme_nextbit::
   _skip_tr::
 
   ;Middle byte
-  add hl, #16
+  ;add hl, #16
 
   ;Check centre-left
   ld a, (hl)
