@@ -52,13 +52,13 @@ const struct Point gosper[] = {
 #define Y_MAX 50
 
 //New board stuff
-#define BUF_WIDTH 16 //16 addresses
-#define BUF_ALIGN_MSK 0x000F
+#define BUF_WIDTH (X_MAX/8) //16 addresses
+// #define BUF_ALIGN_MSK 0x000F
 #define GET_CELL(board, p) board + (BUF_WIDTH*(p.y)) + ((p.x-1)/8)
 
 #define BD_DATA_W (X_MAX/8)  //The buffer row width is 16, but only 10 bits are used
 #define BD_H (Y_MAX+2)  //The number of rows in the buffer has 2 extra for the edge's 0ed neighbours
-#define BD_BUFSIZ (BUF_WIDTH*BD_H*2+BUF_ALIGN_MSK) //Enough for 2 boards to align to a 64bit boundary
+#define BD_BUFSIZ (BUF_WIDTH*BD_H*2) //Enough for 2 boards
 
 uint8_t boardbuffer[BD_BUFSIZ];
 
@@ -107,7 +107,7 @@ void debug_board(uint8_t * board) {
    gotoxy(1,1);
    for (uint8_t y = 0; y < BD_H; y++) {
       printf("%02d:", y);
-      for(uint8_t x = 0; x < BD_DATA_W+2; x++) {
+      for(uint8_t x = 0; x < BD_DATA_W; x++) {
          cell = board + (BUF_WIDTH*y) + x;
          if(*cell) inverse();
          printf(" %02x", *cell);
@@ -128,6 +128,7 @@ void update_cellgp(uint8_t *cellgp, struct Point *p, uint8_t shift, bool set) {
       *cellgp = *cellgp | (1 << shift); //Set alive
       #if DRAW
          putblock(x, y);
+         // printf("Putting block at (%d, %d)", x, y);
       #endif
    }
    else {
@@ -306,39 +307,50 @@ void main(void) {
    uint8_t *board1, *board2, *cell, r;
    struct Point p = {0,0};
    
-   bordercolor(0);
-   // bordercolor(9);
+   // bordercolor(0);
+   bordercolor(9);
    setink(0, 0, 0);  //Paper
    setink(1, 21, 21);  //Pen
 
-   move(0, 0);
-   draw(0, (Y_MAX*BLKSIZ)-1);
-   draw((X_MAX*BLKSIZ)-1, (Y_MAX*BLKSIZ)-1);  
-   draw((X_MAX*BLKSIZ)-1, 0);  
-   draw(0, 0);  
+   // move(0, 0);
+   // draw(0, (Y_MAX*BLKSIZ)-1);
+   // draw((X_MAX*BLKSIZ)-1, (Y_MAX*BLKSIZ)-1);  
+   // draw((X_MAX*BLKSIZ)-1, 0);  
+   // draw(0, 0);  
 
-   //Clear buffer then align 2 boards to next 64bit boundary
-   memset(&boardbuffer, 0, (BUF_WIDTH*BD_H*2)+BUF_ALIGN_MSK);
-   board1 = (uint8_t*)(((uint16_t)&boardbuffer+BUF_ALIGN_MSK) & ~(BUF_ALIGN_MSK));
-   board2 = board1 + (BUF_WIDTH*BD_H);
+   //Clear buffer
+   memset(&boardbuffer, 0, BUF_WIDTH*BD_H*2);
+   board1 = boardbuffer;
+   board2 = boardbuffer + (BUF_WIDTH*BD_H);
 
    //1,1 IS THE MINIMUM
    // put_on_board(board1, glider, 5, 3, 3);
-   put_on_board(board1, square, 1, 3, 2);
-   put_on_board(board1, square, 1, 1, 2);
-   //put_on_board(board1, gosper, 36, 1, 1);
+
+   // put_on_board(board1, square, 1, 1, 1);
+   put_on_board(board1, square, 1, 2, 1);
+   // put_on_board(board1, square, 1, 3, 1);
+
+   // put_on_board(board1, square, 1, 1, 1);
+   put_on_board(board1, square, 1, 2, 2);
+   // put_on_board(board1, square, 1, 3, 2);
+
+   // put_on_board(board1, square, 1, 1, 3);
+   // put_on_board(board1, square, 1, 2, 3);
+   // put_on_board(board1, square, 1, 3, 3);
+
+   // put_on_board(board1, gosper, 36, 1, 1);
    // put_on_board(board1, r_pentomino, 5, 47, 20);
 
    gotoxy(1, 10);
-   printf("Board1 at %04x\r\n", board1);
-   printf("Board2 at %04x\r\n", board2);
 
    cell = board1 + BUF_WIDTH;
    printf("Cell at %04x\r\n", cell);
 
-   r = asmevolve(cell+BUF_WIDTH);
+   // debug_board(board1);
 
-   printf("Cell was %x\r\n", r);
+   r = asmevolve(cell);
+
+   printf("Cell nbs: %x\r\n", r);
 
    while(true);
 
@@ -347,7 +359,6 @@ void main(void) {
       evolve(board2, board1);
    }
 
-   // debug_board(board1);
 
    // while(true) 
    //    if(rdkey()==' ') 
