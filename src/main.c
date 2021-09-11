@@ -147,7 +147,7 @@ void put_on_board(uint8_t * board, struct Point *shape, uint8_t len, uint8_t ox,
       p.y = oy+shape[i].y;
 
       cell = GET_CELL(board, p);
-      shift = (p.x-1)%8;
+      shift = (p.x)%8;
       update_cellgp(cell, &p, shift, true);
    }
 }
@@ -331,13 +331,13 @@ void main(void) {
    // put_on_board(board1, square, 1, 3, 1);
 
    // put_on_board(board1, square, 1, 1, 1);
+   put_on_board(board1, square, 1, 1, 2);
    put_on_board(board1, square, 1, 2, 2);
-   // put_on_board(board1, square, 1, 3, 2);
 
    // put_on_board(board1, square, 1, 1, 3);
    // put_on_board(board1, square, 1, 2, 3);
    // put_on_board(board1, square, 1, 3, 3);
-
+`
    // put_on_board(board1, gosper, 36, 1, 1);
    // put_on_board(board1, r_pentomino, 5, 47, 20);
 

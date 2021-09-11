@@ -52,7 +52,7 @@ _asmevolve::
   ld c, #0
 
 
-  ld d, #1 ;bitmask - when its 255, this byte is complete
+  ld d, #0b00000010 ;bitmask - when its 255, this byte is complete
   ld e, #0 ;nbr count
   
 _asme_nextbit::
@@ -61,6 +61,7 @@ _asme_nextbit::
 
   ;Higher byte
   ld hl, (_higher_cell)
+  srl d
 
   ;Check upper-left - bits 1 to 6
   ld a, (hl)
@@ -139,6 +140,9 @@ _asme_nextbit::
   _skip_cr::
 
   srl d ;Back to the original bit
+
+  ; ld l, d
+  ; ret
 
   ;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
   ld a, (hl)
