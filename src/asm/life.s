@@ -1,28 +1,21 @@
 
-_hl_sub_bc::
+_hl_sub_bc:
   scf
   ccf
   sbc hl, bc
   ret
 
-_hl_add_bc::
+_hl_add_bc:
   scf
   ccf
   adc hl, bc
   ret
 
 
-; unsigned char asmevolve(unsigned char *cell)
+; unsigned char asmevolve(unsigned char *board)
 
-_higher_cell::
+_board_start:
   .dw #0x0000
-
-_cell::
-  .dw #0x0000
-
-_lower_cell::
-  .dw #0x0000
-
 
 .globl	_asmevolve
 
@@ -35,22 +28,15 @@ _asmevolve::
   inc	hl
   ld	a,(hl)
   ld	d,a  
-  ex  de, hl ;hl contains *cell
+  ex  de, hl ;hl contains *board
 
-  ;Store the offsets of cell-10, cell and cell+10 (10*8 bits = 80 columns)
-  ld (_cell), hl
-  ld bc, #10     ;(X_MAX/8)
-  call _hl_sub_bc
-  ld (_higher_cell), hl
-  call _hl_add_bc
-  call _hl_add_bc
-  ld (_lower_cell), hl
-  call _hl_sub_bc
+  ;Store the start of the board memory loc
+  ld (_board_start), hl
+  ld ix, (_board_start)
 
   ; ld bc, #0x0000 ;Current X and Y
   ld b, #0
   ld c, #0
-
 
   ld d, #0b00000010 ;bitmask - when its 255, this byte is complete
   ld e, #0 ;nbr count
@@ -60,11 +46,11 @@ _asme_nextbit::
   ;;; These 8 only work for bit 1 to 6, 0 and 7 need a neighboring byte
 
   ;Higher byte
-  ld hl, (_higher_cell)
+  ; ld hl, (_board_start)
   srl d
 
   ;Check upper-left - bits 1 to 6
-  ld a, (hl)
+  ld a, (ix)
   and d
   jr z, _skip_ul
   ; ld l, #0x89     ;This was called
@@ -73,7 +59,7 @@ _asme_nextbit::
   _skip_ul::
 
   ;Check upper-center - bits 1 to 6
-  ld a, (hl)
+  ld a, (ix)
   sla d
   and d
   jr z, _skip_uc
@@ -81,7 +67,7 @@ _asme_nextbit::
   _skip_uc::
 
   ;Check upper-right - bits 1 to 6
-  ld a, (hl)
+  ld a, (ix)
   sla d
   and d
   jr z, _skip_ur
@@ -92,17 +78,17 @@ _asme_nextbit::
   ;Lower byte
   srl d
   srl d
-  ld hl, (_lower_cell)
+  ; ld hl, (_lower_cell)
 
   ;Check lower-left - bits 1 to 6
-  ld a, (hl)
+  ld a, 20(ix)
   and d
   jr z, _skip_ll
   inc e
   _skip_ll::
 
   ;Check lower-center - bits 1 to 6
-  ld a, (hl)
+  ld a, 20(ix)
   sla d
   and d
   jr z, _skip_lc
@@ -110,7 +96,7 @@ _asme_nextbit::
   _skip_lc::
 
   ;Check lower-right - bits 1 to 6
-  ld a, (hl)
+  ld a, 20(ix)
   sla d
   and d
   jr z, _skip_lr
@@ -121,17 +107,17 @@ _asme_nextbit::
   ;Middle byte
   srl d
   srl d
-  ld hl, (_cell)
+  ; ld hl, (_cell)
 
   ;Check middle-left
-  ld a, (hl)
+  ld a, 10(ix)
   and d ;Check the current bit
   jr z, _skip_cl
   inc e
   _skip_cl::
 
   ;Check middle-right - bits 1 to 6
-  ld a, (hl)
+  ld a, 10(ix)
   sla d
   sla d
   and d
@@ -145,7 +131,7 @@ _asme_nextbit::
   ; ret
 
   ;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
-  ld a, (hl)
+  ld a, 10(ix)
   and d
   jr z, _asme_cell_dead
 
@@ -162,9 +148,9 @@ _asme_nextbit::
   xor #0xFF ;Invert the current bit to kill it
   ld d, a
   
-  ld a, (hl)
+  ld a, 10(ix)
   or d
-  ld (hl), a
+  ld 10(ix), a
 
   ld a, d
   xor #0xFF ;Un-invert the current bit
@@ -180,9 +166,9 @@ _asme_cell_dead:: ;Is a birth if neighbours is 3
   jr nz, _asme_after_life_check ;Z will be clear if neighbours was not 3 - not a birth
 
   ;Bring the cell to life
-  ld a, (hl)
+  ld a, 10(ix)
   or d
-  ld (hl), a
+  ld 10(ix), a
 
   call putblk
 
@@ -212,7 +198,6 @@ putblk:
   ;Temporary - we should set/clear bytes at a time
 
   push bc
-  push hl
   
   rl c
   rl c
@@ -224,7 +209,6 @@ putblk:
 	call get_next_line
   ld (hl), #0xEE
 
-  pop hl
   pop bc
 
   ret
@@ -234,7 +218,6 @@ clrblk:
   ;Temporary - we should set/clear bytes at a time
 
   push bc
-  push hl
   
   rl c
   rl c
@@ -246,7 +229,6 @@ clrblk:
 	call get_next_line
   ld (hl), #0x0E
 
-  pop hl
   pop bc
 
   ret

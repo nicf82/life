@@ -343,12 +343,12 @@ void main(void) {
 
    gotoxy(1, 10);
 
-   cell = board1 + BUF_WIDTH;
-   printf("Cell at %04x\r\n", cell);
+   // cell = board1 + BUF_WIDTH;
+   // printf("Cell at %04x\r\n", cell);
 
    // debug_board(board1);
 
-   r = asmevolve(cell);
+   r = asmevolve(board1);
 
    printf("Cell nbs: %x\r\n", r);
 
