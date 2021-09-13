@@ -327,17 +327,14 @@ void main(void) {
    // put_on_board(board1, glider, 5, 3, 3);
 
    // put_on_board(board1, square, 1, 1, 1);
-   put_on_board(board1, square, 1, 2, 1);
-   // put_on_board(board1, square, 1, 3, 1);
 
-   // put_on_board(board1, square, 1, 1, 1);
+   put_on_board(board1, square, 1, 2, 1);
+
    put_on_board(board1, square, 1, 1, 2);
    put_on_board(board1, square, 1, 2, 2);
+   put_on_board(board1, square, 1, 3, 2);
+   put_on_board(board1, square, 1, 4, 2);
 
-   // put_on_board(board1, square, 1, 1, 3);
-   // put_on_board(board1, square, 1, 2, 3);
-   // put_on_board(board1, square, 1, 3, 3);
-`
    // put_on_board(board1, gosper, 36, 1, 1);
    // put_on_board(board1, r_pentomino, 5, 47, 20);
 

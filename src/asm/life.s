@@ -39,96 +39,116 @@ _asmevolve::
   ld c, #0
 
   ld d, #0b00000010 ;bitmask - when its 255, this byte is complete
-  ld e, #0 ;nbr count
+  ld e, #0 ;nbr count - stores count for each col in 2-bit values - i.e. 0x00LLCCRR
   
 _asme_nextbit::
 
+  ; rlc - rotate l <-- bit 7 goes into carry and 0
+  ; rrc - rotate r --> bit 0 goes into carry and 7
+  ; srl - shift  r --> a 0 is put into bit 7. bit 0 put into the carry flag.
+  ; sla - shift  l <-- a 0 is put into bit 0. bit 7 put into the carry flag.
+
   ;;; These 8 only work for bit 1 to 6, 0 and 7 need a neighboring byte
 
-  ;Higher byte
-  ; ld hl, (_board_start)
+  ;Left bits
   srl d
 
-  ;Check upper-left - bits 1 to 6
-  ld a, (ix)
-  and d
-  jr z, _skip_ul
-  ; ld l, #0x89     ;This was called
-  ; ret
-  inc e
-  _skip_ul::
+    ;Check upper-left - bits 1 to 6
+    ld a, (ix)
+    and d
+    jr z, _skip_ul
+    inc e
+    _skip_ul::
 
-  ;Check upper-center - bits 1 to 6
-  ld a, (ix)
+    ;Check middle-left
+    ld a, 10(ix)
+    and d ;Check the current bit
+    jr z, _skip_cl
+    inc e
+    _skip_cl::
+
+    ;Check lower-left - bits 1 to 6
+    ld a, 20(ix)
+    and d
+    jr z, _skip_ll
+    inc e
+    _skip_ll::
+
+    ;Move col-count left
+    sla e
+    sla e
+
+
+  ;Center bits
   sla d
-  and d
-  jr z, _skip_uc
-  inc e
-  _skip_uc::
 
-  ;Check upper-right - bits 1 to 6
-  ld a, (ix)
+    ;Check upper-center - bits 1 to 6
+    ld a, (ix)
+    and d
+    jr z, _skip_uc
+    inc e
+    _skip_uc::
+
+    ;Check lower-center - bits 1 to 6
+    ld a, 20(ix)
+    and d
+    jr z, _skip_lc
+    inc e
+    _skip_lc::
+
+    ;Move col-count left
+    sla e
+    sla e
+
+
+  ;Right bits
   sla d
-  and d
-  jr z, _skip_ur
-  inc e
-  _skip_ur::
 
+    ;Check upper-right - bits 1 to 6
+    ld a, (ix)
+    and d
+    jr z, _skip_ur
+    inc e
+    _skip_ur::
 
-  ;Lower byte
-  srl d
-  srl d
-  ; ld hl, (_lower_cell)
+    ;Check middle-right - bits 1 to 6
+    ld a, 10(ix)
+    and d
+    jr z, _skip_cr
+    inc e
+    _skip_cr::
 
-  ;Check lower-left - bits 1 to 6
-  ld a, 20(ix)
-  and d
-  jr z, _skip_ll
-  inc e
-  _skip_ll::
-
-  ;Check lower-center - bits 1 to 6
-  ld a, 20(ix)
-  sla d
-  and d
-  jr z, _skip_lc
-  inc e
-  _skip_lc::
-
-  ;Check lower-right - bits 1 to 6
-  ld a, 20(ix)
-  sla d
-  and d
-  jr z, _skip_lr
-  inc e
-  _skip_lr::
-
-
-  ;Middle byte
-  srl d
-  srl d
-  ; ld hl, (_cell)
-
-  ;Check middle-left
-  ld a, 10(ix)
-  and d ;Check the current bit
-  jr z, _skip_cl
-  inc e
-  _skip_cl::
-
-  ;Check middle-right - bits 1 to 6
-  ld a, 10(ix)
-  sla d
-  sla d
-  and d
-  jr z, _skip_cr
-  inc e
-  _skip_cr::
+    ;Check lower-right - bits 1 to 6
+    ld a, 20(ix)
+    and d
+    jr z, _skip_lr
+    inc e
+    _skip_lr::
 
   srl d ;Back to the original bit
 
-  ; ld l, d
-  ; ret
+
+  ;Put neighbour count into l
+  ld a, e
+  and #3
+  ld l, a
+  rrc e
+  rrc e
+  ld a, e
+  and #3
+  add l
+  ld l, a
+  rrc e
+  rrc e
+  ld a, e
+  and #3
+  add l
+  ld l, a
+  rlc e
+  rlc e
+  rlc e ;TODO - maybe we should leave e to to the left, then move to the next cell only calcing rh bits
+  rlc e
+
 
   ;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
   ld a, 10(ix)
@@ -138,30 +158,29 @@ _asme_nextbit::
   ;;Cell is alive - survives if nbrs is 2 or 3
 
   ;Check if survivor
-  ld a, e
+  ld a, l
   and #0b11111110
   cp #2
-  jr z, _asme_after_life_check ;Z will have been set if neighbours was 2 or 3 - cell survives
+  jr z, _asme_after_life_check ;Z is set if neighbours was 2 or 3 - cell survives
   
   ;Kill the cell
   ld a, d
   xor #0xFF ;Invert the current bit to kill it
-  ld d, a
-  
+  ld h, a
   ld a, 10(ix)
-  or d
+  or h
   ld 10(ix), a
 
-  ld a, d
-  xor #0xFF ;Un-invert the current bit
-  ld d, a
-
+  push hl
   call clrblk
+  pop hl
+
+  jr _asme_after_life_check
 
 _asme_cell_dead:: ;Is a birth if neighbours is 3
 
   ;Check if birth
-  ld a, e
+  ld a, l
   cp #3
   jr nz, _asme_after_life_check ;Z will be clear if neighbours was not 3 - not a birth
 
@@ -170,7 +189,9 @@ _asme_cell_dead:: ;Is a birth if neighbours is 3
   or d
   ld 10(ix), a
 
+  push hl
   call putblk
+  pop hl
 
 _asme_after_life_check::
 
@@ -181,7 +202,7 @@ _asme_after_life_check::
 
 _asme_endbit::
   ; ld l, #0x69
-  ld l, e
+  ; ld l, h
 
   ret
 
@@ -203,11 +224,11 @@ putblk:
   rl c
   call get_screen_pos
 
-  ld (hl), #0xEE
+  ld (hl), #0x0E
 	call get_next_line
-  ld (hl), #0xEE
+  ld (hl), #0x0E
 	call get_next_line
-  ld (hl), #0xEE
+  ld (hl), #0x0E
 
   pop bc
 
@@ -223,11 +244,11 @@ clrblk:
   rl c
   call get_screen_pos
   
-  ld (hl), #0x0E
+  ld (hl), #0xEE
 	call get_next_line
-  ld (hl), #0x0E
+  ld (hl), #0xEE
 	call get_next_line
-  ld (hl), #0x0E
+  ld (hl), #0xEE
 
   pop bc
 
