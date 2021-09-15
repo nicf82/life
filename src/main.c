@@ -311,6 +311,7 @@ void main(void) {
    bordercolor(9);
    setink(0, 0, 0);  //Paper
    setink(1, 21, 21);  //Pen
+   setink(2, 24, 24);  //Color 2
 
    // move(0, 0);
    // draw(0, (Y_MAX*BLKSIZ)-1);
@@ -326,14 +327,14 @@ void main(void) {
    //1,1 IS THE MINIMUM
    // put_on_board(board1, glider, 5, 3, 3);
 
-   // put_on_board(board1, square, 1, 1, 1);
+   //FIXME - the below birth fails when this goes in <---------------
+   put_on_board(board1, square, 1, 1, 1);
 
-   put_on_board(board1, square, 1, 2, 1);
+   // put_on_board(board1, square, 1, 3, 1);
 
-   put_on_board(board1, square, 1, 1, 2);
-   put_on_board(board1, square, 1, 2, 2);
-   put_on_board(board1, square, 1, 3, 2);
+   put_on_board(board1, square, 1, 4, 1);
    put_on_board(board1, square, 1, 4, 2);
+   put_on_board(board1, square, 1, 3, 2);
 
    // put_on_board(board1, gosper, 36, 1, 1);
    // put_on_board(board1, r_pentomino, 5, 47, 20);

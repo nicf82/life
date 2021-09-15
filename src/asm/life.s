@@ -1,4 +1,3 @@
-
 _hl_sub_bc:
   scf
   ccf
@@ -17,6 +16,12 @@ _hl_add_bc:
 _board_start:
   .dw #0x0000
 
+_xy:
+_y:
+  .db #0x00
+_x:
+  .db #0x00
+
 .globl	_asmevolve
 
 _asmevolve::
@@ -34,123 +39,121 @@ _asmevolve::
   ld (_board_start), hl
   ld ix, (_board_start)
 
-  ; ld bc, #0x0000 ;Current X and Y
-  ld b, #0
-  ld c, #0
 
-  ld d, #0b00000010 ;bitmask - when its 255, this byte is complete
-  ld e, #0 ;nbr count - stores count for each col in 2-bit values - i.e. 0x00LLCCRR
+  ld e, #0 ;nbr counts - stores count for each col in 2-bit values - i.e. 0x00LLCCRR
+  ld d, #0b00000001 ;bitmask - when its 255, this byte is complete
+
+;Reads first column count without performing a life check as its just the margin column
+_asme_fstbit:
+  ;Check upper
+  ld a, (ix)
+  and d
+  jr z, _skip_fu
+  inc e
+  _skip_fu:
+
+  ;Check middle
+  ld a, 10(ix)
+  and d
+  jr z, _skip_fc
+  inc e
+  _skip_fc:
+
+  ;Check lower
+  ld a, 20(ix)
+  and d
+  jr z, _skip_fl
+  inc e
+  _skip_fl:
+
+_asme_sndbit:
+
+  sla d  ;Shift bit left - #0b00000010
   
-_asme_nextbit::
+  ;Move col-count left
+  sla e  ;;4CA7:   .#      CB 23
+  sla e
+
+  ;Check upper
+  ld a, (ix)
+  and d
+  jr z, _skip_su
+  inc e
+  _skip_su:
+
+  ;Check middle
+  ld a, 10(ix)
+  and d
+  jr z, _skip_sc
+  inc e
+  _skip_sc:
+
+  ;Check lower
+  ld a, 20(ix)
+  and d
+  jr z, _skip_sl
+  inc e
+  _skip_sl:
+
+
+_asme_nextbit:
 
   ; rlc - rotate l <-- bit 7 goes into carry and 0
   ; rrc - rotate r --> bit 0 goes into carry and 7
-  ; srl - shift  r --> a 0 is put into bit 7. bit 0 put into the carry flag.
   ; sla - shift  l <-- a 0 is put into bit 0. bit 7 put into the carry flag.
+  ; srl - shift  r --> a 0 is put into bit 7. bit 0 put into the carry flag.
 
-  ;;; These 8 only work for bit 1 to 6, 0 and 7 need a neighboring byte
+  sla d  ;Shift bit left - if this wraps, then we need to inc ix - #0b00000100
 
-  ;Left bits
+  ;Put count of previous 2 col's nbrs into l
+  ld a, e
+  and #3
+  ld l, a
+  rrc e ;Rotate right get the next 2 bit value
+  rrc e
+  ld a, e
+  and #3
+  add l
+  ld l, a
+  rlc e ;Rotale left again
+  rlc e
+
+  ;Move col-count left
+  sla e
+  sla e
+
+  ;Check upper
+  ld a, (ix)
+  and d
+  jr z, _skip_u
+  inc e
+  _skip_u:
+
+  ;Check middle
+  ld a, 10(ix)
+  and d
+  jr z, _skip_c
+  inc e
+  _skip_c:
+
+  ;Check lower
+  ld a, 20(ix)
+  and d
+  jr z, _skip_l
+  inc e
+  _skip_l:
+
+  ;Add new neighbour count into l
+  ld a, e
+  and #3
+  add l
+  ld l, a
+
+
+  ;Put butmask back to middle bit to check life - #0b00000010
   srl d
 
-    ;Check upper-left - bits 1 to 6
-    ld a, (ix)
-    and d
-    jr z, _skip_ul
-    inc e
-    _skip_ul::
-
-    ;Check middle-left
-    ld a, 10(ix)
-    and d ;Check the current bit
-    jr z, _skip_cl
-    inc e
-    _skip_cl::
-
-    ;Check lower-left - bits 1 to 6
-    ld a, 20(ix)
-    and d
-    jr z, _skip_ll
-    inc e
-    _skip_ll::
-
-    ;Move col-count left
-    sla e
-    sla e
-
-
-  ;Center bits
-  sla d
-
-    ;Check upper-center - bits 1 to 6
-    ld a, (ix)
-    and d
-    jr z, _skip_uc
-    inc e
-    _skip_uc::
-
-    ;Check lower-center - bits 1 to 6
-    ld a, 20(ix)
-    and d
-    jr z, _skip_lc
-    inc e
-    _skip_lc::
-
-    ;Move col-count left
-    sla e
-    sla e
-
-
-  ;Right bits
-  sla d
-
-    ;Check upper-right - bits 1 to 6
-    ld a, (ix)
-    and d
-    jr z, _skip_ur
-    inc e
-    _skip_ur::
-
-    ;Check middle-right - bits 1 to 6
-    ld a, 10(ix)
-    and d
-    jr z, _skip_cr
-    inc e
-    _skip_cr::
-
-    ;Check lower-right - bits 1 to 6
-    ld a, 20(ix)
-    and d
-    jr z, _skip_lr
-    inc e
-    _skip_lr::
-
-  srl d ;Back to the original bit
-
-
-  ;Put neighbour count into l
-  ld a, e
-  and #3
-  ld l, a
-  rrc e
-  rrc e
-  ld a, e
-  and #3
-  add l
-  ld l, a
-  rrc e
-  rrc e
-  ld a, e
-  and #3
-  add l
-  ld l, a
-  rlc e
-  rlc e
-  rlc e ;TODO - maybe we should leave e to to the left, then move to the next cell only calcing rh bits
-  rlc e
-
-
-  ;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
+;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
   ld a, 10(ix)
   and d
   jr z, _asme_cell_dead
@@ -158,6 +161,7 @@ _asme_nextbit::
   ;;Cell is alive - survives if nbrs is 2 or 3
 
   ;Check if survivor
+  dec l   ;Dont include this live cell in nbrs cnt
   ld a, l
   and #0b11111110
   cp #2
@@ -166,9 +170,9 @@ _asme_nextbit::
   ;Kill the cell
   ld a, d
   xor #0xFF ;Invert the current bit to kill it
-  ld h, a
-  ld a, 10(ix)
-  or h
+  ld h, a ; eg 11111101
+  ld a, 10(ix) ; eg 00001010
+  and h ; eg 00001000 - killed 2nd bit
   ld 10(ix), a
 
   push hl
@@ -195,15 +199,14 @@ _asme_cell_dead:: ;Is a birth if neighbours is 3
 
 _asme_after_life_check::
 
+  sla d ;Put bitmask back to righthand column bit - #0b00000100
+  ld a, (_x)
+  inc a
+  ld (_x), a
 
-  ;Check if we are on bit 6 - the last one that can be processed with this current logic
-  ld a, d
-  and #0b01000000
-
-_asme_endbit::
-  ; ld l, #0x69
-  ; ld l, h
-
+  cp a, #3
+  jr nz, _asme_nextbit
+  
   ret
 
 
@@ -219,7 +222,8 @@ putblk:
   ;Temporary - we should set/clear bytes at a time
 
   push bc
-  
+    
+  ld bc, (_xy)
   rl c
   rl c
   call get_screen_pos
@@ -240,6 +244,7 @@ clrblk:
 
   push bc
   
+  ld bc, (_xy)
   rl c
   rl c
   call get_screen_pos
