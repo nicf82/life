@@ -328,13 +328,20 @@ void main(void) {
    // put_on_board(board1, glider, 5, 3, 3);
 
    //FIXME - the below birth fails when this goes in <---------------
-   put_on_board(board1, square, 1, 1, 1);
+   // put_on_board(board1, square, 1, 1, 1);
 
    // put_on_board(board1, square, 1, 3, 1);
 
+   put_on_board(board1, square, 1, 3, 2);
+
    put_on_board(board1, square, 1, 4, 1);
    put_on_board(board1, square, 1, 4, 2);
-   put_on_board(board1, square, 1, 3, 2);
+
+
+   put_on_board(board1, square, 1, 8, 2);
+
+   put_on_board(board1, square, 1, 9, 1);
+   put_on_board(board1, square, 1, 9, 2);
 
    // put_on_board(board1, gosper, 36, 1, 1);
    // put_on_board(board1, r_pentomino, 5, 47, 20);
@@ -349,13 +356,14 @@ void main(void) {
    r = asmevolve(board1);
 
    printf("Cell nbs: %x\r\n", r);
+   printf("The 2nd shape starts at the 2nd byte\r\n");
 
    while(true);
 
-   while(true) {
-      evolve(board1, board2);
-      evolve(board2, board1);
-   }
+   // while(true) {
+   //    evolve(board1, board2);
+   //    evolve(board2, board1);
+   // }
 
 
    // while(true) 

@@ -204,7 +204,7 @@ _asme_after_life_check::
   inc a
   ld (_x), a
 
-  cp a, #3
+  cp a, #7 ;Currently checking if absolute x coordinate is 7, as we only do 1 byte the first of which is the margin
   jr nz, _asme_nextbit
   
   ret
@@ -228,7 +228,7 @@ putblk:
   rl c
   call get_screen_pos
 
-  ld (hl), #0x0E
+  ld (hl), #0x0E ;E leaves a border F would be a full block
 	call get_next_line
   ld (hl), #0x0E
 	call get_next_line
