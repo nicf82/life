@@ -11,6 +11,13 @@ _hl_add_bc:
   ret
 
 
+;
+; SDCC - Interfacing with Z80 assembler code
+; ------------------------------------------
+; > https://gist.github.com/Konamiman/af5645b9998c802753023cf1be8a2970
+;
+
+
 ; unsigned char asmevolve(unsigned char *board)
 
 _board_start:
@@ -33,15 +40,15 @@ _asmevolve::
   inc	hl
   ld	a,(hl)
   ld	d,a  
-  ex  de, hl ;hl contains *board
+  ex  de, hl ;hl now contains *board
 
   ;Store the start of the board memory loc
   ld (_board_start), hl
   ld ix, (_board_start)
 
 
-  ld e, #0 ;nbr counts - stores count for each col in 2-bit values - i.e. 0x00LLCCRR
-  ld d, #0b00000001 ;bitmask - when its 255, this byte is complete
+  ld e, #0 ;nbr counts - stores count for each col in 2-bit seminibbles - i.e. 0x00LLCCRR
+  ld d, #0b00000001 ;bitmask - when its 128, this byte is complete
 
 ;Reads first column count without performing a life check as its just the margin column
 _asme_fstbit:
@@ -98,18 +105,29 @@ _asme_sndbit:
 
 _asme_nextbit:
 
-  ; rlc - rotate l <-- bit 7 goes into carry and 0
-  ; rrc - rotate r --> bit 0 goes into carry and 7
-  ; sla - shift  l <-- a 0 is put into bit 0. bit 7 put into the carry flag.
-  ; srl - shift  r --> a 0 is put into bit 7. bit 0 put into the carry flag.
+  ; http://jgmalcolm.com/z80/advanced/shif
+  ; rl arg1  - Rotates arg1 register to the left with the carry's value put into bit 0 and bit 7 is put into the carry.
+  ; rla      - Rotates a register to the left with the carry's value put into bit 0 and bit 7 is put into the carry. One byte shorter than rl a.
+  ; rlc arg1 - Rotates arg1 to the left with bit 7 being moved to bit 0 and also stored into the carry.
+  ; rlca     - Rotates a to the left with bit 7 being moved to bit 0 and also stored into the carry. It's one byte shorter than rlc a.
+  ; rr arg1  - Rotates arg1 to the right with the carry put in bit 7 and bit 0 put into the carry.
+  ; rra      - Rotates a to the right with the carry put into bit 7 and bit 0 put into the carry flag. It's one byte shorter than rr a.
+  ; rrc arg1 - Rotates arg1 to the right with bit 0 moved to bit 7 and also stored into the carry.
+  ; rrca     - Rotates arg1 to the right with bit 0 moved to bit 7 and also stored into the carry. This is one byte shorter than rrc a.
+  ; sla arg1 - Shifts arg1 register to the left with bit 7 moved to the carry flag and bit 0 reset (zeroed).
+  ; sra arg1 - Shifts arg1 register to the right with bit 0 moved to the carry flag and bit 7 retaining it's original value.
+  ; srl arg1 - Shifts arg1 register to the right with bit 0 moved to the carry flag and bit 7 zeroed.  
 
-  sla d  ;Shift bit left - if this wraps, then we need to inc ix - #0b00000100
+  rlc d  ;Rotate bit left - if this wraps, then we need to inc ix - #0b00000100
+;  jr nc, _asme_after_colwrap_check_1
+;   inc ix
+;_asme_after_colwrap_check_1:
 
   ;Put count of previous 2 col's nbrs into l
   ld a, e
   and #3
   ld l, a
-  rrc e ;Rotate right get the next 2 bit value
+  rrc e ;Rotate right get the next seminibble
   rrc e
   ld a, e
   and #3
@@ -118,7 +136,7 @@ _asme_nextbit:
   rlc e ;Rotale left again
   rlc e
 
-  ;Move col-count left
+  ;Move col nbr counts left
   sla e
   sla e
 
@@ -150,8 +168,11 @@ _asme_nextbit:
   ld l, a
 
 
-  ;Put butmask back to middle bit to check life - #0b00000010
-  srl d
+  ;Put butmask back to middle bit to check life, dec ix if it wraps - #0b00000010
+  rrc d
+;   jr nc, _asme_after_colwrap_check_2
+;   dec ix
+; _asme_after_colwrap_check_2:
 
 ;life_check - HERE is where the survive/birth/death will go for this bit, e contains the nbr count
   ld a, 10(ix)
@@ -199,13 +220,23 @@ _asme_cell_dead:: ;Is a birth if neighbours is 3
 
 _asme_after_life_check::
 
-  sla d ;Put bitmask back to righthand column bit - #0b00000100
-  ld a, (_x)
+  ;Put bitmask back to righthand column bit, inc ix if it wraps. Context: when we loop round to _asme_nextbit 
+  ;we will first count the following bit's nbrs, then come back to this bit to check life - #0b00000100
+  rlc d
+;   jr nc, _asme_after_colwrap_check_3
+;   inc ix
+; _asme_after_colwrap_check_3:
+  
+  push hl
+  call putmarker
+  pop hl
+
+  ld a, (_x) ;Inc the x coordinate, we will need to handle y after the last column
   inc a
   ld (_x), a
 
-  cp a, #7 ;Currently checking if absolute x coordinate is 7, as we only do 1 byte the first of which is the margin
-  jr nz, _asme_nextbit
+  cp a, #9 ;Currently checking if absolute x coordinate is 7, as we only do 1 byte the first of which is the margin
+  jp nz, _asme_nextbit
   
   ret
 
@@ -215,7 +246,26 @@ _asme_after_life_check::
 ;
 ; Stuff from vidmem.s - couldnt access it otherwise without some messing about
 ;
+
+putmarker:
   
+  ;Temporary - used to add a small marker to a cell
+
+  push bc
+    
+  ld bc, (_xy)
+  sla c
+  sla c
+  call get_screen_pos
+
+	call get_next_line
+	call get_next_line
+	call get_next_line
+  ld (hl), #0b00110011
+
+  pop bc
+
+  ret
 
 putblk:
   
@@ -224,8 +274,8 @@ putblk:
   push bc
     
   ld bc, (_xy)
-  rl c
-  rl c
+  sla c
+  sla c
   call get_screen_pos
 
   ld (hl), #0x0E ;E leaves a border F would be a full block
@@ -245,8 +295,8 @@ clrblk:
   push bc
   
   ld bc, (_xy)
-  rl c
-  rl c
+  sla c
+  sla c
   call get_screen_pos
   
   ld (hl), #0xEE
@@ -292,7 +342,7 @@ get_next_line:
 	add hl,bc
 ret
 
-;Eaxh word here is the offset of a line of the CPC screen, 8*25 = 200 lines
+;Each word here is the offset of a line of the CPC screen, 8*25 = 200 lines
 
 scr_addresses:
   .db 0x00,0x00, 0x00,0x08, 0x00,0x10, 0x00,0x18, 0x00,0x20, 0x00,0x28, 0x00,0x30, 0x00,0x38;1

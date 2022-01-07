@@ -309,9 +309,10 @@ void main(void) {
    
    // bordercolor(0);
    bordercolor(9);
-   setink(0, 0, 0);  //Paper
-   setink(1, 21, 21);  //Pen
-   setink(2, 24, 24);  //Color 2
+   setink(0, 0, 0);  //Paper - Black
+   setink(1, 21, 21);  //Pen - Lime
+   setink(2, 24, 24);  //Color 2 - Bright Yellow
+   setink(3, 6, 6);  //Color 3 - Bright Red
 
    // move(0, 0);
    // draw(0, (Y_MAX*BLKSIZ)-1);
@@ -355,7 +356,7 @@ void main(void) {
 
    r = asmevolve(board1);
 
-   printf("Cell nbs: %x\r\n", r);
+   printf("Cell nbs: %d\r\n", r);
    printf("The 2nd shape starts at the 2nd byte\r\n");
 
    while(true);
